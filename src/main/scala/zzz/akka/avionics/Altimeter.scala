@@ -16,10 +16,12 @@ object Altimeter {
 
   private case object Tick
 
+  def apply(): Altimeter = new Altimeter with ProductionEventSource
+
 }
 
-class Altimeter
-  extends Actor with ActorLogging with EventSource {
+class Altimeter extends Actor with ActorLogging {
+  this: EventSource =>
 
   import Altimeter._
 

@@ -12,12 +12,12 @@ class Plane extends Actor with ActorLogging {
 
   import Altimeter._
   import Plane._
-  import EventSource._
+  import ProductionEventSource._
 
-  val altimeter = context.actorOf(Props[Altimeter], "Altimeter")
+  val altimeter = context.actorOf(Props(Altimeter()), "Altimeter")
   val controls = context.actorOf(Props(new ControlSurfaces(altimeter)), "ControlSurfaces")
 
-  override def preStart(): Unit ={
+  override def preStart(): Unit = {
     altimeter ! RegisterListener(self)
   }
 

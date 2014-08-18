@@ -1,28 +1,11 @@
 package zzz.akka.avionics
 
-import akka.actor.{Actor, ActorRef}
-
-object EventSource {
-
-  case class RegisterListener(listener: ActorRef)
-
-  case class UnregisterListener(listener: ActorRef)
-
-}
+import akka.actor.Actor
 
 trait EventSource {
-  this: Actor =>
 
-  import EventSource._
+  def sendEvent[T](event: T): Unit
 
-  var listeners = Vector.empty[ActorRef]
+  def eventSourceReceive: Actor.Receive
 
-  def sendEvent[T](event: T): Unit = listeners.foreach {
-    _ ! event
-  }
-
-  def eventSourceReceive: Receive = {
-    case RegisterListener(listener) => listeners = listeners :+ listener
-    case UnregisterListener(listener) => listeners = listeners.filter(_ != listener)
-  }
 }
