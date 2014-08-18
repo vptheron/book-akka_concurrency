@@ -1,19 +1,10 @@
 package zzz.akka.avionics
 
 import akka.actor.{Actor, ActorRef}
-
-object ProductionEventSource {
-
-  case class RegisterListener(listener: ActorRef)
-
-  case class UnregisterListener(listener: ActorRef)
-
-}
+import zzz.akka.avionics.EventSource.{UnregisterListener, RegisterListener}
 
 trait ProductionEventSource extends EventSource {
   this: Actor =>
-
-  import ProductionEventSource._
 
   var listeners = Vector.empty[ActorRef]
 

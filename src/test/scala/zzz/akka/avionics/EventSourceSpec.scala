@@ -3,7 +3,7 @@ package zzz.akka.avionics
 import akka.actor.{ActorSystem, Actor}
 import akka.testkit.{TestActorRef, TestKit, ImplicitSender}
 import org.scalatest.{WordSpecLike, BeforeAndAfterAll, Matchers}
-import zzz.akka.avionics.ProductionEventSource.{RegisterListener, UnregisterListener}
+import zzz.akka.avionics.EventSource.{UnregisterListener, RegisterListener}
 
 object EventSourceSpec {
 

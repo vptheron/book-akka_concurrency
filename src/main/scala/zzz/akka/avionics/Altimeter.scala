@@ -11,8 +11,8 @@ object Altimeter {
 
   case class AltitudeUpdate(altitude: Double)
 
-  private val ceiling = 43000
-  private val maxRateOfClimb = 5000
+  val ceiling = 43000
+  val maxRateOfClimb = 5000
 
   private case object Tick
 
@@ -27,8 +27,8 @@ class Altimeter extends Actor with ActorLogging {
 
   implicit val ec: ExecutionContext = context.dispatcher
 
-  private var rateOfClimb = 0f
-  private var altitude = 0d
+  private[avionics] var rateOfClimb = 0f
+  private[avionics] var altitude = 0d
   private var lastTick = System.currentTimeMillis
 
   private val ticker = context.system.scheduler.schedule(100.millis, 100.millis, self, Tick)
@@ -41,6 +41,7 @@ class Altimeter extends Actor with ActorLogging {
     case Tick =>
       val tick = System.currentTimeMillis
       altitude = altitude + ((tick - lastTick) / 60000.0) * rateOfClimb
+      altitude = altitude.min(ceiling)
       lastTick = tick
       sendEvent(AltitudeUpdate(altitude))
   }
