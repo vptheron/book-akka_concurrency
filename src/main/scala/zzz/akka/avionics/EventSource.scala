@@ -1,6 +1,6 @@
 package zzz.akka.avionics
 
-import akka.actor.Actor
+import akka.actor.{ActorRef, Actor}
 
 trait EventSource {
 
