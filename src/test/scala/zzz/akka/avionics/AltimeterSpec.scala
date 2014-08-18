@@ -1,7 +1,7 @@
 package zzz.akka.avionics
 
 import akka.actor.{Props, Actor, ActorSystem}
-import akka.testkit.{TestActorRef, TestLatch, ImplicitSender, TestKit}
+import akka.testkit._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.Await
@@ -38,26 +38,27 @@ class AltimeterSpec
 
     "calculate altitude changes" in new Helper {
       val ref = system.actorOf(Props(Altimeter()))
-      ref ! EventSource.RegisterListener(testActor)
+      val p = TestProbe()
+      ref ! EventSource.RegisterListener(p.ref)
       ref ! RateChange(1f)
-      fishForMessage() {
+      p.fishForMessage() {
         case AltitudeUpdate(altitude) if altitude == 0f => false
         case AltitudeUpdate(_) => true
       }
-      system.stop(ref)
     }
 
     "not go above ceiling" in new Helper {
+      val p = TestProbe()
       val ref = TestActorRef[Altimeter](Props(Altimeter()))
       ref.underlyingActor.altitude = ceiling - 1
-      ref ! EventSource.RegisterListener(testActor)
+      ref ! EventSource.RegisterListener(p.ref)
       ref ! RateChange(1f)
-      fishForMessage() {
+      p.fishForMessage() {
         case AltitudeUpdate(altitude) if altitude == ceiling => true
         case AltitudeUpdate(altitude) => false
       }
 
-      expectMsg(AltitudeUpdate(ceiling))
+      p.expectMsg(AltitudeUpdate(ceiling))
     }
 
     "send events" in new Helper {
