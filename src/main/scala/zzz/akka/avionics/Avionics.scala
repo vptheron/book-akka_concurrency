@@ -9,13 +9,15 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object Avionics {
 
+  import Plane._
+
   def main(args: Array[String]): Unit ={
     implicit val timeout = Timeout(5.seconds)
 
     val system = ActorSystem("PlaneSimulation")
     val plane = system.actorOf(Props[Plane], "Plane")
 
-    val control = Await.result((plane ? Plane.GiveMeControl).mapTo[ActorRef], 5.seconds)
+    val control = Await.result((plane ? GiveMeControl).mapTo[Controls], 5.seconds).controls
 
     system.scheduler.scheduleOnce(200.millis){
       control ! ControlSurfaces.StickBack(1f)
