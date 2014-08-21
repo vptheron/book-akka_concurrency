@@ -15,9 +15,13 @@ object Plane {
 
   case class Controls(controls: ActorRef)
 
+  case object TakeControl
+
   case object RequestCopilot
 
   case class CopilotReference(copilot: ActorRef)
+
+  case object LostControl
 
   private val configPrefix = "zzz.akka.avionics.flightcrew"
 }
@@ -25,6 +29,7 @@ object Plane {
 class Plane extends Actor with ActorLogging {
 
   this: AltimeterProvider
+    with HeadingIndicatorProvider
     with PilotProvider
     with LeadFlightAttendantProvider =>
 
@@ -46,7 +51,8 @@ class Plane extends Actor with ActorLogging {
         override def childStarter(): Unit = {
           context.actorOf(Props(newAutopilot(plane)), "Autopilot")
           val alt = context.actorOf(Props(newAltimeter), "Altimeter")
-          context.actorOf(Props(new ControlSurfaces(alt)), "ControlSurfaces")
+          val heading = context.actorOf(Props(newHeadingIndicator), "HeadingIndicator")
+          context.actorOf(Props(new ControlSurfaces(plane, alt, heading)), "ControlSurfaces")
         }
       }
     ), "Equipment")
@@ -91,6 +97,8 @@ class Plane extends Actor with ActorLogging {
     case GiveMeControl =>
       log.info("Plane giving control.")
       sender ! Controls(actorForControls("ControlSurfaces"))
+
+    case LostControl => actorForControls("Autopilot") ! TakeControl
 
     case AltitudeUpdate(altitude) =>
       log.info(s"Altitude is now: $altitude")
