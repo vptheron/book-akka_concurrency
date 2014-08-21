@@ -1,6 +1,7 @@
-package zzz.akka.avionics
+package zzz.akka.avionics.main
 
 import akka.actor.Props
+import zzz.akka.avionics.{AttendantCreationPolicy, LeadFlightAttendant}
 
 object FlightAttendantPathChecker {
 

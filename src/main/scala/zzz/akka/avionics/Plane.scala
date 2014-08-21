@@ -1,6 +1,7 @@
 package zzz.akka.avionics
 
 import akka.actor.{ActorRef, Props, ActorLogging, Actor}
+import Pilots._
 
 object Plane {
 
@@ -13,22 +14,26 @@ object Plane {
 
 class Plane extends Actor with ActorLogging {
 
+  this: AltimeterProvider
+  with PilotProvider
+  with LeadFlightAttendantProvider =>
+
   import Altimeter._
   import Plane._
   import EventSource._
 
-  private val altimeter = context.actorOf(Props(Altimeter()), "Altimeter")
+  private val altimeter = context.actorOf(Props(newAltimeter), "Altimeter")
   private val controls: ActorRef = context.actorOf(Props(new ControlSurfaces(altimeter)), "ControlSurfaces")
 
   private val config = context.system.settings.config
-  private val pilot = context.actorOf(Props[Pilot], config.getString(s"$configPrefix.pilotName"))
-  private val copilot = context.actorOf(Props[Copilot], config.getString(s"$configPrefix.copilotName"))
-  private val autopilot = context.actorOf(Props[Autopilot], "Autopilot")
-  private val flightAttendant = context.actorOf(Props(LeadFlightAttendant()), config.getString(s"$configPrefix.leadAttendantName"))
+  private val pilot = context.actorOf(Props(newPilot), config.getString(s"$configPrefix.pilotName"))
+  private val copilot = context.actorOf(Props(newCopilot), config.getString(s"$configPrefix.copilotName"))
+  private val autopilot = context.actorOf(Props(newAutopilot), "Autopilot")
+  private val flightAttendant = context.actorOf(Props(newLeadFlightAttendant), config.getString(s"$configPrefix.leadAttendantName"))
 
   override def preStart(): Unit = {
     altimeter ! RegisterListener(self)
-    List(pilot, copilot).foreach(_ ! Pilot.ReadyToGo)
+    List(pilot, copilot).foreach(_ ! ReadyToGo)
   }
 
   def receive = {

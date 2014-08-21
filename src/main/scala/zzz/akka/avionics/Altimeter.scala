@@ -53,3 +53,9 @@ class Altimeter extends Actor with ActorLogging {
   }
 
 }
+
+trait AltimeterProvider {
+
+  def newAltimeter: Actor = Altimeter()
+
+}
