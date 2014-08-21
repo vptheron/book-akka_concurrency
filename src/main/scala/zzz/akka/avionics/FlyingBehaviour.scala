@@ -1,6 +1,6 @@
 package zzz.akka.avionics
 
-import akka.actor.{Actor, FSM, ActorRef}
+import akka.actor.{Props, Actor, FSM, ActorRef}
 import scala.concurrent.duration._
 
 object FlyingBehaviour {
@@ -68,6 +68,11 @@ object FlyingBehaviour {
       c ! bankCalc(t, s)
       data
   }
+
+  case class NewElevatorCalculator(f: Calculator)
+
+  case class NewBankCalculator(f: Calculator)
+
 }
 
 class FlyingBehaviour(plane: ActorRef,
@@ -140,9 +145,15 @@ class FlyingBehaviour(plane: ActorRef,
 
     case Event(Adjust, d: FlightData) =>
       stay using adjust(d)
+
+    case Event(NewBankCalculator(f), d: FlightData) =>
+      stay using d.copy(bankCalc = f)
+
+    case Event(NewElevatorCalculator(f), d: FlightData) =>
+      stay using d.copy(elevCalc = f)
   }
 
-  onTransition{
+  onTransition {
     case Flying -> _ => cancelTimer("Adjustment")
   }
 
@@ -157,4 +168,11 @@ class FlyingBehaviour(plane: ActorRef,
   }
 
   initialize()
+}
+
+trait FlyingProvider {
+  def newFlyingBehaviour(plane: ActorRef,
+                         heading: ActorRef,
+                         altimeter: ActorRef): Props =
+    Props(new FlyingBehaviour(plane, heading, altimeter))
 }
