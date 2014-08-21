@@ -6,7 +6,7 @@ import akka.util.Timeout
 import akka.pattern.ask
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{Matchers, WordSpecLike}
-import zzz.akka.avionics.Pilots.Copilot
+import zzz.akka.avionics.Pilots.{ReadyToGo, Autopilot, Copilot}
 import zzz.akka.{IsolatedLifeCycleSupervisor, OneForOneStrategyFactory, IsolatedStopSupervisor}
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -47,12 +47,12 @@ class PilotsSpec
     implicit val askTimeout = Timeout(4.seconds)
 
     val a = system.actorOf(Props(
-    new IsolatedStopSupervisor() with OneForOneStrategyFactory {
-      override def childStarter(): Unit = {
-        context.actorOf(Props[FakePilot], pilotName)
-        context.actorOf(Props(new Copilot(testActor, nilActor, nilActor)), copilotName)
-      }
-    }), "TestPilots")
+      new IsolatedStopSupervisor() with OneForOneStrategyFactory {
+        override def childStarter(): Unit = {
+          context.actorOf(Props[FakePilot], pilotName)
+          context.actorOf(Props(new Copilot(testActor, nilActor, nilActor)), copilotName)
+        }
+      }), "TestPilots")
 
     Await.result(a ? IsolatedLifeCycleSupervisor.WaitForStart, 3.seconds)
     system.actorFor(copilotPath) ! Pilots.ReadyToGo
@@ -64,8 +64,22 @@ class PilotsSpec
       pilotsReadyToGo()
       system.actorFor(pilotPath) ! PoisonPill
       expectMsg(GiveMeControl)
-      lastSender should be (system.actorFor(copilotPath))
+      lastSender should be(system.actorFor(copilotPath))
     }
+  }
+
+  "Autopilot" should {
+    "take control when the copilot dies" in {
+      val copilot = system.actorOf(Props[FakePilot])
+      val autopilot = system.actorOf(Props(new Autopilot(testActor)))
+      autopilot ! ReadyToGo
+      expectMsg(RequestCopilot)
+      autopilot ! CopilotReference(copilot)
+      copilot ! PoisonPill
+      expectMsg(GiveMeControl)
+      lastSender should be(autopilot)
+    }
+
   }
 
 }

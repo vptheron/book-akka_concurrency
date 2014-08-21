@@ -15,6 +15,10 @@ object Plane {
 
   case class Controls(controls: ActorRef)
 
+  case object RequestCopilot
+
+  case class CopilotReference(copilot: ActorRef)
+
   private val configPrefix = "zzz.akka.avionics.flightcrew"
 }
 
@@ -35,10 +39,12 @@ class Plane extends Actor with ActorLogging {
   private implicit val askTimeout = Timeout(1.second)
 
   private def startEquipment(): Unit = {
+    val plane = self
+
     val equipment = context.actorOf(Props(
       new IsolatedResumeSupervisor() with OneForOneStrategyFactory {
         override def childStarter(): Unit = {
-          context.actorOf(Props(newAutopilot), "Autopilot")
+          context.actorOf(Props(newAutopilot(plane)), "Autopilot")
           val alt = context.actorOf(Props(newAltimeter), "Altimeter")
           context.actorOf(Props(new ControlSurfaces(alt)), "ControlSurfaces")
         }
@@ -78,6 +84,7 @@ class Plane extends Actor with ActorLogging {
     actorForControls("Altimeter") ! RegisterListener(self)
     actorForPilots(pilotName) ! ReadyToGo
     actorForPilots(copilotName) ! ReadyToGo
+    actorForControls("Autopilot") ! ReadyToGo
   }
 
   def receive = {
@@ -87,6 +94,9 @@ class Plane extends Actor with ActorLogging {
 
     case AltitudeUpdate(altitude) =>
       log.info(s"Altitude is now: $altitude")
+
+    case RequestCopilot =>
+      sender ! CopilotReference(actorForPilots(copilotName))
   }
 
 }

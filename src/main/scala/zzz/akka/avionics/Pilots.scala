@@ -1,9 +1,10 @@
 package zzz.akka.avionics
 
 import akka.actor.{Terminated, ActorRef, Actor}
-import zzz.akka.avionics.Plane.GiveMeControl
 
 object Pilots {
+
+  import Plane._
 
   case object ReadyToGo
 
@@ -44,10 +45,18 @@ object Pilots {
     }
   }
 
-  class Autopilot extends Actor {
+  class Autopilot(plane: ActorRef) extends Actor {
 
     def receive = {
-      case _ =>
+      case ReadyToGo =>
+        plane ! RequestCopilot
+
+      case CopilotReference(copilot) =>
+        context.watch(copilot)
+
+      case Terminated(_) =>
+        plane ! GiveMeControl
+
     }
 
   }
@@ -65,7 +74,8 @@ object Pilots {
                    altimeter: ActorRef): Actor =
       new Copilot(plane, autopilot, altimeter)
 
-    def newAutopilot: Actor = new Autopilot
+    def newAutopilot(plane: ActorRef): Actor =
+      new Autopilot(plane)
   }
 
 }
