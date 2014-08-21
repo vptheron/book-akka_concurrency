@@ -90,7 +90,7 @@ class Plane extends Actor with ActorLogging {
   def receive = {
     case GiveMeControl =>
       log.info("Plane giving control.")
-//      sender ! Controls(controls)
+      sender ! Controls(actorForControls("ControlSurfaces"))
 
     case AltitudeUpdate(altitude) =>
       log.info(s"Altitude is now: $altitude")

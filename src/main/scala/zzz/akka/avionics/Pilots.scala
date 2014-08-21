@@ -42,10 +42,14 @@ object Pilots {
 
       case Terminated(_) =>
         plane ! GiveMeControl
+
+      case Controls(ctrl) => controls = ctrl
     }
   }
 
   class Autopilot(plane: ActorRef) extends Actor {
+
+    private var controls: ActorRef = context.system.deadLetters
 
     def receive = {
       case ReadyToGo =>
@@ -57,6 +61,7 @@ object Pilots {
       case Terminated(_) =>
         plane ! GiveMeControl
 
+      case Controls(ctrl) => controls = ctrl
     }
 
   }
