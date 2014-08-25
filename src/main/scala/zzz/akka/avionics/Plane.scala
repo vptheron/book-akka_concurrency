@@ -2,6 +2,7 @@ package zzz.akka.avionics
 
 import akka.actor.{ActorRef, Props, ActorLogging, Actor}
 import akka.pattern.ask
+import akka.routing.FromConfig
 import akka.util.Timeout
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -24,6 +25,11 @@ object Plane {
   case object LostControl
 
   private val configPrefix = "zzz.akka.avionics.flightcrew"
+
+  def apply() = new Plane with AltimeterProvider
+    with HeadingIndicatorProvider
+    with PilotProvider
+    with FlightAttendantProvider
 }
 
 class Plane extends Actor with ActorLogging {
@@ -31,7 +37,7 @@ class Plane extends Actor with ActorLogging {
   this: AltimeterProvider
     with HeadingIndicatorProvider
     with PilotProvider
-    with LeadFlightAttendantProvider =>
+    with FlightAttendantProvider =>
 
   import Altimeter._
   import Plane._
@@ -69,15 +75,19 @@ class Plane extends Actor with ActorLogging {
     val autopilot = actorForControls("Autopilot")
     val altimeter = actorForControls("Altimeter")
 
+    val leadAttendant = context.actorOf(
+      Props(newFlightAttendant()).withRouter(FromConfig),
+      "FlightAttendantRouter")
+
     val people = context.actorOf(Props(
       new IsolatedStopSupervisor() with OneForOneStrategyFactory {
         override def childStarter(): Unit = {
           context.actorOf(Props(newPilot(plane, autopilot, heading, altimeter)), pilotName)
           context.actorOf(Props(newCopilot(plane, autopilot, altimeter)), copilotName)
+          context.actorOf(Props(PassengerSupervisor(leadAttendant)), "Passengers")
         }
       }
     ), "Pilots")
-    context.actorOf(Props(newLeadFlightAttendant), config.getString(s"$configPrefix.leadAttendantName"))
     Await.result(people ? WaitForStart, 1.second)
   }
 

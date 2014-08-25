@@ -71,11 +71,20 @@ class FlightAttendant extends Actor {
 }
 
 trait AttendantResponsiveness {
+
   import scala.concurrent.duration._
 
   val maxResponseTimeMS: Int
 
   def responseDuration = scala.util.Random.nextInt(maxResponseTimeMS).millis
 
+}
+
+trait FlightAttendantProvider {
+
+  def newFlightAttendant(): Actor =
+    new FlightAttendant with AttendantResponsiveness {
+      val maxResponseTimeMS = 300000
+    }
 }
 
