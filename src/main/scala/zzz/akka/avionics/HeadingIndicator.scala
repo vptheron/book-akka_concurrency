@@ -17,11 +17,15 @@ object HeadingIndicator {
 
 }
 
-class HeadingIndicator extends Actor with ActorLogging {
+class HeadingIndicator
+  extends Actor
+  with ActorLogging
+  with StatusReporter {
 
   this: EventSource =>
 
   import HeadingIndicator._
+  import StatusReporter._
   import context._
 
   private val ticker = system.scheduler.schedule(100.millis, 100.millis, self, Tick)
@@ -29,6 +33,8 @@ class HeadingIndicator extends Actor with ActorLogging {
   private var lastTick: Long = System.currentTimeMillis
   private var rateOfBank = 0f
   private var heading = 0f
+
+  def currentStatus = StatusOK
 
   def headingIndicatorReceive: Receive = {
     case BankChange(amount) =>
@@ -44,9 +50,11 @@ class HeadingIndicator extends Actor with ActorLogging {
       sendEvent(HeadingUpdate(heading))
   }
 
-  def receive = eventSourceReceive orElse headingIndicatorReceive
+  def receive = statusReceive orElse
+    eventSourceReceive orElse
+    headingIndicatorReceive
 
-  override def postStop(): Unit ={
+  override def postStop(): Unit = {
     ticker.cancel()
   }
 
