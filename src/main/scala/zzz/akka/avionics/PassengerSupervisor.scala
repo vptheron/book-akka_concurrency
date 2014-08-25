@@ -1,8 +1,12 @@
 package zzz.akka.avionics
 
-import akka.actor.SupervisorStrategy.{Stop, Resume, Escalate}
+import akka.actor.SupervisorStrategy.{Escalate, Resume, Stop}
 import akka.actor._
-import akka.routing.{BroadcastGroup, BroadcastRouter}
+import akka.routing.BroadcastGroup
+import akka.util.Timeout
+import akka.pattern.{ask, pipe}
+
+import scala.concurrent.duration._
 
 object PassengerSupervisor {
 
@@ -19,7 +23,9 @@ class PassengerSupervisor(callButton: ActorRef) extends Actor {
 
   this: PassengerProvider =>
 
-  import PassengerSupervisor._
+  import zzz.akka.avionics.PassengerSupervisor._
+
+  private implicit val ec = context.dispatcher
 
   override val supervisorStrategy = OneForOneStrategy() {
     case _: ActorKilledException => Escalate
@@ -27,10 +33,7 @@ class PassengerSupervisor(callButton: ActorRef) extends Actor {
     case _ => Resume
   }
 
-  case class GetChildren(forSomeone: ActorRef)
-
-  case class Children(children: Iterable[ActorRef],
-                      childrenFor: ActorRef)
+  case object GetChildren
 
   override def preStart(): Unit = {
     context.actorOf(Props(new Actor {
@@ -42,41 +45,46 @@ class PassengerSupervisor(callButton: ActorRef) extends Actor {
       }
 
       override def preStart(): Unit = {
-        import scala.collection.JavaConverters._
         import com.typesafe.config.ConfigList
+
+        import scala.collection.JavaConverters._
 
         val passengers = config.getList("zzz.akka.avionics.passengers")
 
         passengers.asScala.foreach { nameWithSeat =>
           val id = nameWithSeat.asInstanceOf[ConfigList]
             .unwrapped().asScala.mkString("-")
-          .replaceAllLiterally(" ", "-")
+            .replaceAllLiterally(" ", "-")
           context.actorOf(Props(newPassenger(callButton)), id)
         }
       }
 
       def receive = {
-        case GetChildren(forSomeone) => sender ! Children(context.children, forSomeone)
+        case GetChildren => sender ! context.children.toList
       }
     }), "PassengersSupervisor")
   }
 
-  def noRouter: Receive = {
-    case GetPassengerBroadcaster =>
-      val passengers = context.actorFor("PassengersSupervisor")
-      passengers ! GetChildren(sender())
+  private implicit val askTimeout = Timeout(5.seconds)
 
-    case Children(passengers, destinedFor) =>
-      val childrenPaths = passengers.toList.map(_.path.toStringWithoutAddress)
-      val router = context.actorOf(BroadcastGroup(childrenPaths).props(), "Passengers")
+  def noRouter: Receive = {
+
+    case GetPassengerBroadcaster =>
+      val destinedFor = sender()
+      val actor = context.actorFor("PassengersSupervisor")
+      (actor ? GetChildren).mapTo[Seq[ActorRef]] map { passengers =>
+        val childrenPaths = passengers.toList.map(_.path.toStringWithoutAddress)
+        (BroadcastGroup(childrenPaths).props(), destinedFor)
+      } pipeTo self
+
+    case (props: Props, destinedFor: ActorRef) =>
+      val router = context.actorOf(props, "Passengers")
       destinedFor ! PassengerBroadcaster(router)
       context.become(withRouter(router))
   }
 
   def withRouter(router: ActorRef): Receive = {
     case GetPassengerBroadcaster => sender ! PassengerBroadcaster(router)
-
-    case Children(_, destinedFor) => destinedFor ! PassengerBroadcaster(router)
   }
 
   def receive = noRouter
