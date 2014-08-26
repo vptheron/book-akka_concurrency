@@ -28,7 +28,7 @@ class Passenger(callButton: ActorRef) extends Actor with ActorLogging {
 
   val r = scala.util.Random
 
-  val SeatAssignment(myname, _, _) = self.path.name.replaceAllLiterally("_", " ")
+  val myname = self.path.name.replaceAllLiterally("_", " ")
 
   val drinks = context.system.settings.config.getStringList("zzz.akka.avionics.drinks").asScala.toIndexedSeq
 
