@@ -26,6 +26,9 @@ object Altimeter {
   private case class AltitudeCalculated(newTick: Long,
                                         altitude: Double)
 
+  case object GetCurrentAltitude
+
+  case class CurrentAltitude(altitude: Double)
 }
 
 class Altimeter extends Actor with ActorLogging {
@@ -70,6 +73,8 @@ class Altimeter extends Actor with ActorLogging {
       altitude += altDelta
       altitude = altitude.min(ceiling)
       sendEvent(AltitudeUpdate(altitude))
+
+    case GetCurrentAltitude => sender ! CurrentAltitude(altitude)
   }
 
   def receive = eventSourceReceive orElse altimeterReceive

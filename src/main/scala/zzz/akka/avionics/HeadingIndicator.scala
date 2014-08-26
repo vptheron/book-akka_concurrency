@@ -9,6 +9,10 @@ object HeadingIndicator {
 
   case class HeadingUpdate(heading: Float)
 
+  case object GetCurrentHeading
+
+  case class CurrentHeading(heading: Float)
+
   private case object Tick
 
   private val maxDegPerSec = 5
@@ -48,6 +52,8 @@ class HeadingIndicator
       lastTick = tick
 
       sendEvent(HeadingUpdate(heading))
+
+    case GetCurrentHeading => sender ! CurrentHeading(heading)
   }
 
   def receive = statusReceive orElse

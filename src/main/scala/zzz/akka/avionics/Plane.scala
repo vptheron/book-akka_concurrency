@@ -4,6 +4,7 @@ import akka.actor.{ActorRef, Props, ActorLogging, Actor}
 import akka.pattern.ask
 import akka.routing.FromConfig
 import akka.util.Timeout
+import zzz.akka.avionics.HeadingIndicator.GetCurrentHeading
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import Pilots._
@@ -114,6 +115,10 @@ class Plane extends Actor with ActorLogging {
 
     case RequestCopilot =>
       sender ! CopilotReference(actorForPilots(copilotName))
+
+    case GetCurrentAltitude => actorForControls("Altimeter").forward(GetCurrentAltitude)
+
+    case GetCurrentHeading => actorForControls("HeadingIndicator").forward(GetCurrentHeading)
   }
 
 }
