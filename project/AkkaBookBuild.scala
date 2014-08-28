@@ -15,6 +15,7 @@ object AkkaBookBuild extends Build {
       "com.typesafe.akka" %% "akka-actor" % AkkaVersion,
       "com.typesafe.akka" %% "akka-testkit" % AkkaVersion,
       "com.typesafe.akka" %% "akka-remote" % AkkaVersion,
+      "com.typesafe.akka" %% "akka-agent" % AkkaVersion,
       "org.scalatest" %% "scalatest" % ScalaTestVersion
     )
   }

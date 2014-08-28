@@ -1,9 +1,11 @@
 package zzz.akka.avionics
 
 import akka.actor.{ActorRef, Props, ActorLogging, Actor}
+import akka.agent.Agent
 import akka.pattern.ask
-import akka.routing.FromConfig
+import akka.routing.{RoundRobinRouter, FromConfig}
 import akka.util.Timeout
+import zzz.akka.avionics.Bathroom.{Female, Male, GenderAndTime}
 import zzz.akka.avionics.HeadingIndicator.GetCurrentHeading
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -49,6 +51,15 @@ class Plane extends Actor with ActorLogging {
   private val copilotName = config.getString(s"$configPrefix.copilotName")
 
   private implicit val askTimeout = Timeout(1.second)
+
+  private val maleBathroomCounter = Agent(GenderAndTime(Male, 0.seconds, 0))(context.dispatcher)
+  private val femaleBathroomCounter = Agent(GenderAndTime(Female, 0.seconds, 0))(context.dispatcher)
+
+  private def startUtilities(): Unit = {
+    context.actorOf(Props(
+      new Bathroom(femaleBathroomCounter, maleBathroomCounter))
+      , "Bathrooms")
+  }
 
   private def startEquipment(): Unit = {
     val plane = self
