@@ -165,6 +165,7 @@ class FlyingBehaviour(plane: ActorRef,
 
   whenUnhandled {
     case Event(RelinquishControl, _) => goto(Idle)
+    case Event(Adjust, d) => stay using d  // unclear why this is so verbose in unit tests
   }
 
   initialize()

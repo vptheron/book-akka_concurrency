@@ -21,16 +21,17 @@ class Beacon(heading: Float) extends Actor {
 
   private implicit val ec = context.dispatcher
 
-  val bus = new EventBusForActors[BeaconHeading, Boolean]({
-    _: BeaconHeading => true
-  })
+//  val bus = new EventBusForActors[BeaconHeading, Boolean]({
+//    _: BeaconHeading => true
+//  })
 
   val ticker = context.system.scheduler.schedule(beaconInterval, beaconInterval, self, Tick)
 
   def receive = {
-    case RegisterListener(actor) => bus.subscribe(actor, true)
-    case UnregisterListener(actor) => bus.unsubscribe(actor)
-    case Tick => bus.publish(BeaconHeading(heading))
+//    case RegisterListener(actor) => bus.subscribe(actor, true)
+//    case UnregisterListener(actor) => bus.unsubscribe(actor)
+//    case Tick => bus.publish(BeaconHeading(heading))
+    case _ =>
   }
 }
 
