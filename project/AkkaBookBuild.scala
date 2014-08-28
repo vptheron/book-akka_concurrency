@@ -10,13 +10,11 @@ object AkkaBookBuild extends Build {
   object Dependencies {
     val AkkaVersion = "2.3.5"
     val ScalaTestVersion = "2.2.1"
-    val JUnitVersion = "4.10"
 
     val avionics = Seq(
       "com.typesafe.akka" %% "akka-actor" % AkkaVersion,
       "com.typesafe.akka" %% "akka-testkit" % AkkaVersion,
       "com.typesafe.akka" %% "akka-remote" % AkkaVersion,
-      "junit" % "juni" % JUnitVersion,
       "org.scalatest" %% "scalatest" % ScalaTestVersion
     )
   }
